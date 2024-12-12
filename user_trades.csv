@@ -1,0 +1,37 @@
+import pandas as pd
+import os
+
+USER_TRADES_FILE = "user_trades.csv"
+
+# Function to load user trades
+def load_user_trades():
+    if os.path.exists(USER_TRADES_FILE):
+        return pd.read_csv(USER_TRADES_FILE)
+    else:
+        return pd.DataFrame(columns=["Timestamp", "Username", "Symbol", "Entry Price", "Stop-Loss Price", "Target Price", "Exit Price", "Profit/Loss", "Status"])
+
+# Function to save a user's trade
+def save_user_trade(username, symbol, entry_price, sl_price, trg_price, exit_price, profit_or_loss, status):
+    df = load_user_trades()
+    new_trade = {
+        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Username": username,
+        "Symbol": symbol,
+        "Entry Price": entry_price,
+        "Stop-Loss Price": sl_price,
+        "Target Price": trg_price,
+        "Exit Price": exit_price,
+        "Profit/Loss": profit_or_loss,
+        "Status": status,
+    }
+    df = df.append(new_trade, ignore_index=True)
+    df.to_csv(USER_TRADES_FILE, index=False)
+
+# Function to display user trades
+def display_user_trades(username):
+    df = load_user_trades()
+    user_trades = df[df["Username"] == username]
+    if not user_trades.empty:
+        st.dataframe(user_trades)
+    else:
+        st.write("No trades logged yet.")
