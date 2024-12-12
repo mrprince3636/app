@@ -2,6 +2,72 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import time
+import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import datetime
+
+# Streamlit app title
+st.title("User Trade Logger")
+st.write("Log your trades securely into a Google Sheet.")
+
+# Step 1: Authenticate with Google Sheets API using Streamlit Secrets
+def authenticate_with_google():
+    # Load credentials from Streamlit Secrets
+    gspread_creds = st.secrets["gspread_credentials"]
+
+    # Define the required scopes
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+    # Authenticate using the credentials
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(gspread_creds), scope)
+    client = gspread.authorize(creds)
+    return client
+
+# Step 2: Open Google Sheet
+@st.cache_resource
+def get_google_sheet(sheet_name):
+    client = authenticate_with_google()
+    sheet = client.open(sheet_name).sheet1
+    return sheet
+
+# Google Sheet name (replace with your actual sheet name)
+sheet_name = "Trade Logs"  # Replace "Trade Logs" with the name of your Google Sheet
+sheet = get_google_sheet(sheet_name)
+
+# Step 3: Function to log trades
+def log_trade(user_name, trade_symbol, profit_loss):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sheet.append_row([timestamp, user_name, trade_symbol, profit_loss])
+    st.success("Trade logged successfully!")
+
+# Step 4: Streamlit UI for trade logging
+# User inputs
+user_name = st.text_input("User Name", placeholder="Enter your name")
+trade_symbol = st.text_input("Trade Symbol", placeholder="Enter the trade symbol (e.g., TCS.NS)")
+profit_loss = st.text_input("Profit/Loss", placeholder="Enter profit or loss (e.g., +5%)")
+
+# Submit button
+if st.button("Log Trade"):
+    if user_name and trade_symbol and profit_loss:
+        try:
+            log_trade(user_name, trade_symbol, profit_loss)
+        except Exception as e:
+            st.error(f"Failed to log trade: {e}")
+    else:
+        st.error("Please fill in all fields.")
+
+# Display recent trades (optional)
+if st.checkbox("Show Recent Trades"):
+    try:
+        trades = sheet.get_all_records()
+        if trades:
+            st.write("### Recent Trades")
+            st.dataframe(trades)
+        else:
+            st.info("No trades logged yet.")
+    except Exception as e:
+        st.error(f"Failed to fetch trades: {e}")
 
 # Define stock symbols and corresponding company names
 stock_details = {
